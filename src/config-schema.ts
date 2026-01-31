@@ -58,6 +58,7 @@ export const FeishuGroupSchema = z
     enabled: z.boolean().optional(),
     allowFrom: z.array(z.union([z.string(), z.number()])).optional(),
     systemPrompt: z.string().optional(),
+    webhookUrl: z.string().url().optional(),
   })
   .strict();
 

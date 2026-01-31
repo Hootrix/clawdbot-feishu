@@ -95,6 +95,11 @@ channels:
     mediaMaxMb: 30
     # Render mode for bot replies: "auto" | "raw" | "card"
     renderMode: "auto"
+    # Per-group configuration with webhook fallback
+    groups:
+      "oc_xxxxx":  # Group chat ID
+        enabled: true
+        webhookUrl: "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx"
 ```
 
 #### Render Mode
@@ -117,6 +122,7 @@ channels:
 - User and group directory lookup
 - **Card render mode**: Optional markdown rendering with syntax highlighting
 - **@mention forwarding**: When you @mention someone in your message, the bot's reply will automatically @mention them too
+- **Webhook fallback**: Automatic fallback to group webhook when API quota is exceeded
 
 #### @Mention Forwarding
 
@@ -126,6 +132,36 @@ When you want the bot to @mention someone in its reply, simply @mention them in 
 - **In Group**: `@bot @张三 say hello` → Bot replies with `@张三 Hello!`
 
 The bot automatically detects @mentions in your message and includes them in its reply. No extra permissions required beyond the standard messaging permissions.
+
+#### Webhook Fallback
+
+When Feishu API quota is exceeded (HTTP 429 or error code 99991403), the bot automatically falls back to using group webhooks (free, no quota limits).
+
+**How it works:**
+1. User message → OpenClaw → Attempts Feishu API send
+2. If quota exceeded (429/99991403) → Automatically uses webhook (free)
+3. Messages sent via webhook appear as interactive cards
+
+**Setup:**
+
+1. In your Feishu group → Settings → Add Bot → Custom Bot
+2. Copy the Webhook URL
+3. Add to config file under `groups[chat_id].webhookUrl`:
+
+```yaml
+channels:
+  feishu:
+    groups:
+      "oc_181b88f541ebde89b0861696165e7ee6":
+        enabled: true
+        webhookUrl: "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx"
+```
+
+**Benefits:**
+- Zero downtime when API quota is exhausted
+- Webhook messages are free (no quota)
+- Automatic, transparent failover
+- Messages sent as rich interactive cards
 
 ### FAQ
 
@@ -258,6 +294,11 @@ channels:
     mediaMaxMb: 30
     # 回复渲染模式: "auto" | "raw" | "card"
     renderMode: "auto"
+    # 群组配置（支持 webhook 降级）
+    groups:
+      "oc_xxxxx":  # 群聊 ID
+        enabled: true
+        webhookUrl: "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx"
 ```
 
 #### 渲染模式
@@ -280,6 +321,7 @@ channels:
 - 用户和群组目录查询
 - **卡片渲染模式**：支持语法高亮的 Markdown 渲染
 - **@ 转发功能**：在消息中 @ 某人，机器人的回复会自动 @ 该用户
+- **Webhook 降级**：API 配额超限时自动降级使用群组 webhook
 
 #### @ 转发功能
 
@@ -289,6 +331,36 @@ channels:
 - **群聊**：`@机器人 @张三 跟他问好` → 机器人回复 `@张三 你好！`
 
 机器人会自动检测消息中的 @ 并在回复时带上。无需额外权限。
+
+#### Webhook 降级
+
+当飞书 API 配额超限（HTTP 429 或错误码 99991403）时，机器人会自动降级使用群组 webhook（免费，无配额限制）。
+
+**工作原理：**
+1. 用户消息 → OpenClaw → 尝试飞书 API 发送
+2. 如果配额超限（429/99991403）→ 自动使用 webhook 发送（免费）
+3. Webhook 消息以交互式卡片形式展示
+
+**配置方法：**
+
+1. 在飞书群里 → 设置 → 添加机器人 → 自定义机器人
+2. 复制 Webhook 地址
+3. 添加到配置文件的 `groups[chat_id].webhookUrl`：
+
+```yaml
+channels:
+  feishu:
+    groups:
+      "oc_181b88f541ebde89b0861696165e7ee6":
+        enabled: true
+        webhookUrl: "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx"
+```
+
+**优势：**
+- API 配额耗尽时零停机
+- Webhook 消息免费（无配额）
+- 自动透明降级
+- 消息以富文本交互式卡片展示
 
 ### 常见问题
 

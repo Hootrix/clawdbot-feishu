@@ -5,6 +5,8 @@ import { buildMentionedMessage, buildMentionedCardContent } from "./mention.js";
 import { createFeishuClient } from "./client.js";
 import { resolveReceiveIdType, normalizeFeishuTarget } from "./targets.js";
 import { getFeishuRuntime } from "./runtime.js";
+import { resolveFeishuGroupConfig } from "./policy.js";
+import { sendViaWebhook, isQuotaError } from "./webhook.js";
 
 export type FeishuMessageInfo = {
   messageId: string;
@@ -321,5 +323,103 @@ export async function editMessageFeishu(params: {
 
   if (response.code !== 0) {
     throw new Error(`Feishu message edit failed: ${response.msg || `code ${response.code}`}`);
+  }
+}
+
+/**
+ * Send text message with webhook fallback on quota errors.
+ * If API fails with 429/99991403, automatically retry via webhook (if configured).
+ */
+export async function sendMessageFeishuWithFallback(params: SendFeishuMessageParams): Promise<FeishuSendResult> {
+  const { cfg, to } = params;
+  const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
+  
+  try {
+    return await sendMessageFeishu(params);
+  } catch (error) {
+    if (!isQuotaError(error)) {
+      throw error;
+    }
+
+    const chatId = normalizeFeishuTarget(to);
+    if (!chatId) {
+      throw error;
+    }
+
+    const groupConfig = resolveFeishuGroupConfig({ cfg: feishuCfg, groupId: chatId });
+    const webhookUrl = groupConfig?.webhookUrl;
+
+    if (!webhookUrl) {
+      throw new Error(
+        `Feishu API quota exceeded (${String(error)}). No webhook configured for fallback. ` +
+        `Add webhookUrl to channels.feishu.groups["${chatId}"].webhookUrl in config.`
+      );
+    }
+
+    const runtime = getFeishuRuntime();
+    runtime.log?.(`feishu: API quota exceeded, falling back to webhook for ${chatId}`);
+
+    await sendViaWebhook({
+      webhookUrl,
+      text: params.text,
+      mentions: params.mentions,
+    });
+
+    return {
+      messageId: "webhook-sent",
+      chatId,
+    };
+  }
+}
+
+/**
+ * Send markdown card with webhook fallback on quota errors.
+ * If API fails with 429/99991403, automatically retry via webhook (if configured).
+ */
+export async function sendMarkdownCardFeishuWithFallback(params: {
+  cfg: ClawdbotConfig;
+  to: string;
+  text: string;
+  replyToMessageId?: string;
+  mentions?: MentionTarget[];
+}): Promise<FeishuSendResult> {
+  const { cfg, to } = params;
+  const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
+  
+  try {
+    return await sendMarkdownCardFeishu(params);
+  } catch (error) {
+    if (!isQuotaError(error)) {
+      throw error;
+    }
+
+    const chatId = normalizeFeishuTarget(to);
+    if (!chatId) {
+      throw error;
+    }
+
+    const groupConfig = resolveFeishuGroupConfig({ cfg: feishuCfg, groupId: chatId });
+    const webhookUrl = groupConfig?.webhookUrl;
+
+    if (!webhookUrl) {
+      throw new Error(
+        `Feishu API quota exceeded (${String(error)}). No webhook configured for fallback. ` +
+        `Add webhookUrl to channels.feishu.groups["${chatId}"].webhookUrl in config.`
+      );
+    }
+
+    const runtime = getFeishuRuntime();
+    runtime.log?.(`feishu: API quota exceeded, falling back to webhook for ${chatId}`);
+
+    await sendViaWebhook({
+      webhookUrl,
+      text: params.text,
+      mentions: params.mentions,
+    });
+
+    return {
+      messageId: "webhook-sent",
+      chatId,
+    };
   }
 }

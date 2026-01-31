@@ -6,7 +6,7 @@ import { feishuOutbound } from "./outbound.js";
 import { probeFeishu } from "./probe.js";
 import { resolveFeishuGroupToolPolicy } from "./policy.js";
 import { normalizeFeishuTarget, looksLikeFeishuId, formatFeishuTarget } from "./targets.js";
-import { sendMessageFeishu } from "./send.js";
+import { sendMessageFeishuWithFallback } from "./send.js";
 import {
   listFeishuDirectoryPeers,
   listFeishuDirectoryGroups,
@@ -35,7 +35,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
     idLabel: "feishuUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(feishu|user|open_id):/i, ""),
     notifyApproval: async ({ cfg, id }) => {
-      await sendMessageFeishu({
+      await sendMessageFeishuWithFallback({
         cfg,
         to: id,
         text: PAIRING_APPROVED_MESSAGE,
@@ -86,6 +86,20 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
         chunkMode: { type: "string", enum: ["length", "newline"] },
         mediaMaxMb: { type: "number", minimum: 0 },
         renderMode: { type: "string", enum: ["auto", "raw", "card"] },
+        groups: {
+          type: "object",
+          additionalProperties: {
+            type: "object",
+            properties: {
+              enabled: { type: "boolean" },
+              requireMention: { type: "boolean" },
+              systemPrompt: { type: "string" },
+              webhookUrl: { type: "string" },
+              allowFrom: { type: "array", items: { oneOf: [{ type: "string" }, { type: "number" }] } },
+            },
+            additionalProperties: false,
+          },
+        },
       },
     },
   },

@@ -10,7 +10,10 @@ export {
   updateCardFeishu,
   editMessageFeishu,
   getMessageFeishu,
+  sendMessageFeishuWithFallback,
+  sendMarkdownCardFeishuWithFallback,
 } from "./src/send.js";
+export { sendViaWebhook, isQuotaError } from "./src/webhook.js";
 export {
   uploadImageFeishu,
   uploadFileFeishu,
