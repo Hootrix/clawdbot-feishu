@@ -12,6 +12,7 @@ export {
   getMessageFeishu,
   sendMessageFeishuWithFallback,
   sendMarkdownCardFeishuWithFallback,
+  sendMediaFeishuWithFallback,
 } from "./src/send.js";
 export { sendViaWebhook, isQuotaError } from "./src/webhook.js";
 export {

@@ -8,6 +8,8 @@ import { getFeishuRuntime } from "./runtime.js";
 import { resolveFeishuGroupConfig } from "./policy.js";
 import { sendViaWebhook, isQuotaError } from "./webhook.js";
 
+export { sendMediaFeishuWithFallback } from "./send-media-fallback.js";
+
 export type FeishuMessageInfo = {
   messageId: string;
   chatId: string;

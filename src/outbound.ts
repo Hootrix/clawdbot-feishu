@@ -1,6 +1,6 @@
 import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk";
 import { getFeishuRuntime } from "./runtime.js";
-import { sendMessageFeishuWithFallback } from "./send.js";
+import { sendMessageFeishuWithFallback, sendMediaFeishuWithFallback } from "./send.js";
 import { sendMediaFeishu } from "./media.js";
 
 export const feishuOutbound: ChannelOutboundAdapter = {
@@ -21,12 +21,12 @@ export const feishuOutbound: ChannelOutboundAdapter = {
     // Upload and send media if URL provided
     if (mediaUrl) {
       try {
-        const result = await sendMediaFeishu({ cfg, to, mediaUrl });
+        const result = await sendMediaFeishuWithFallback({ cfg, to, mediaUrl });
         return { channel: "feishu", ...result };
       } catch (err) {
         // Log the error for debugging
-        console.error(`[feishu] sendMediaFeishu failed:`, err);
-        // Fallback to URL link if upload fails
+        console.error(`[feishu] sendMediaFeishuWithFallback failed:`, err);
+        // Final fallback to URL link if everything fails
         const fallbackText = `📎 ${mediaUrl}`;
         const result = await sendMessageFeishuWithFallback({ cfg, to, text: fallbackText });
         return { channel: "feishu", ...result };

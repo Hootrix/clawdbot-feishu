@@ -5,6 +5,7 @@ export type SendWebhookParams = {
   webhookUrl: string;
   text: string;
   mentions?: MentionTarget[];
+  imageKey?: string; // For sending images via webhook
 };
 
 export type WebhookResponse = {
@@ -16,13 +17,37 @@ export type WebhookResponse = {
 /**
  * Send message via Feishu webhook (fallback when API quota exceeded).
  * Webhook messages are always sent as interactive cards.
+ * Supports text and images.
  */
 export async function sendViaWebhook(params: SendWebhookParams): Promise<void> {
-  const { webhookUrl, text, mentions } = params;
+  const { webhookUrl, text, mentions, imageKey } = params;
 
   let content = text;
   if (mentions && mentions.length > 0) {
     content = buildMentionedCardContent(mentions, text);
+  }
+
+  // Build card elements
+  const elements: any[] = [];
+
+  // Add text if provided
+  if (text) {
+    elements.push({
+      tag: "markdown",
+      content,
+    });
+  }
+
+  // Add image if provided
+  if (imageKey) {
+    elements.push({
+      tag: "img",
+      img_key: imageKey,
+      alt: {
+        tag: "plain_text",
+        content: "Image",
+      },
+    });
   }
 
   const payload = {
@@ -31,12 +56,7 @@ export async function sendViaWebhook(params: SendWebhookParams): Promise<void> {
       config: {
         wide_screen_mode: true,
       },
-      elements: [
-        {
-          tag: "markdown",
-          content,
-        },
-      ],
+      elements,
     },
   };
 
